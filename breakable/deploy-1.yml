@@ -1,0 +1,142 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blamtest
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: downstream
+  namespace: blamtest
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: downstream
+    spec:
+      containers:a
+      - command:
+        - node
+        - server.js
+        image: blam/grpc-test:v1.5.0
+        name: downstream
+        ports:
+        - containerPort: 8443
+        resources:
+          requests:
+            cpu: 10m
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mellan
+  namespace: blamtest
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mellan
+    spec:
+      containers:
+      - command:
+        - node
+        - mellan.js
+        image: blam/grpc-test:v1.5.0
+        resources:
+          requests:
+            memory: 2.1Gi
+            cpu: 1.8
+        name: mellan
+        ports:
+        - containerPort: 8443
+        livenessProbe:
+          tcpSocket:
+            port: 8443
+          failureThreshold: 30
+          initialDelaySeconds: 200
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          tcpSocket:
+            port: 8443
+          failureThreshold: 30
+          initialDelaySeconds: 200
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 1
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mellan
+  namespace: blamtest
+spec:
+  selector:
+    app: mellan
+  type: NodePort
+  ports:
+  - port: 8443
+    targetPort: 8443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: downstream
+  namespace: blamtest
+spec:
+  selector:
+    app: downstream
+  type: NodePort
+  ports:
+  - port: 8443
+    targetPort: 8443
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: client1
+  namespace: blamtest
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: client1
+    spec:
+      containers:
+      - command:
+        - node
+        - getter.js
+        image: blam/grpc-test:v1.5.0
+        name: client1
+        resources:
+          requests:
+            cpu: 100m
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: client2
+  namespace: blamtest
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: client2
+    spec:
+      containers:
+      - command:
+        - node
+        - getter.js
+        image: blam/grpc-test:v1.5.0
+        name: client2
+        resources:
+          requests:
+            cpu: 100m

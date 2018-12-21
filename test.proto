@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package test;
+
+service TestService {
+    rpc Get(GetMessage) returns (ReturnMessage);
+}
+
+message ReturnMessage {
+    string response = 1;
+}
+
+message GetMessage {
+    string id = 1;
+}
